@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "name": "landing",
+      "script": "pnpm",
+      "args": "preview --host",
+      "interpreter": "/bin/bash"
+    }
+  ]
+}
