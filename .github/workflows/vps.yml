@@ -1,0 +1,64 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+env:
+  NODE_MAX_OLD_SPACE_SIZE: "--max-old-space-size=4096"
+  PROJECT_NAME: ${{ github.head_ref || github.ref_name == 'main' && 'landing' || 'landing-dev' }}
+  WORKING_DIR: ${{ secrets.WORKING_DIR }}
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    environment: production
+    defaults:
+      run:
+        working-directory: '${{ env.WORKING_DIR }}/${{ env.PROJECT_NAME }}'
+
+    steps:
+      - name: setup WORKING_DIR
+        run: 
+          |
+          echo ${{ github.head_ref || github.ref_name }}
+          echo "${{ github.head_ref || github.ref_name }}"
+          echo "GITHUB_WORKFLOW: ${{ github.workflow }}"
+          echo "GITHUB_RUN_ID: ${{ github.run_id }}"
+          echo "GITHUB_RUN_NUMBER: ${{ github.run_number }}"
+          echo "GITHUB_JOB: ${{ github.job }}"
+          echo "GITHUB_REF: ${{ github.ref }}"
+          echo "GITHUB_SHA: ${{ github.sha }}"
+          echo "GITHUB_REPOSITORY: ${{ github.repository }}"
+          echo "GITHUB_ACTOR: ${{ github.actor }}"
+          echo "GITHUB_WORKSPACE: ${{ github.workspace }}"
+          echo "GITHUB_ACTION: ${{ github.action }}"
+          echo "GITHUB_EVENT_NAME: ${{ github.event_name }}"
+          echo "GITHUB_EVENT_PATH: ${{ github.event_path }}"
+          echo "GITHUB_SERVER_URL: ${{ github.server_url }}"
+          echo "GITHUB_API_URL: ${{ github.api_url }}"
+
+      - name: stop pm2
+        run: pm2 stop ${{ env.PROJECT_NAME }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pull latest changes
+        run: git pull
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: |
+          export NODE_OPTIONS=${{ env.NODE_MAX_OLD_SPACE_SIZE }}
+          pnpm build
+
+      - name: Start pm2
+        run: pm2 start ${{ env.PROJECT_NAME }}
