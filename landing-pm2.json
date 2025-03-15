@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "landing",
+      "name": "landing_dev",
       "script": "pnpm",
       "args": "preview --host",
       "interpreter": "/bin/bash"

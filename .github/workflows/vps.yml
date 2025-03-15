@@ -1,0 +1,47 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+env:
+  NODE_MAX_OLD_SPACE_SIZE: "--max-old-space-size=4096"
+  WORKING_DIR: ${{ secrets.WORKING_DIR }}
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    environment: production
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: Stop pm2
+        run: 
+          |
+          echo "PM2_HOME=/root/.pm2" >> $GITHUB_ENV
+          pm2 list
+          pm2 stop corporativo-kallpa-landing
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pull latest changes
+        run: git pull
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: |
+          export NODE_OPTIONS=${{ env.WORKING_DIR }}
+          pnpm build
+
+      - name: Start pm2
+        run: pm2 start corporativo-kallpa-landing
